@@ -26,14 +26,14 @@ function PriceChange() {
         const formData = new FormData();
         formData.append('file', file);
         try {
-            const response = await axios.post('http://localhost:5000/upload', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+            const response = await fetch('http://localhost:5000/upload', {
+                method: 'POST',
+                body: formData,
             });
             setStatus('success');
             handleSuccess();
-            console.log(response.data);
+            const responseData = await response.json();
+            console.log(responseData);
         } catch (error) {
             setStatus('error');
             console.error(error);

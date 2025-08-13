@@ -5,11 +5,27 @@ import os
 
 class PYpdf:
 
-    reader = PyPDF2.PdfReader("uploads/DougPriceChg.pdf")
-    
+    def __init__(self, path):
+
+        self.path = path
+
 
     def extract_text(self) -> list[str]:
-        with open("uploads/DougPriceChg.pdf", "rb") as pdf:
+        if not self.check_path(self.path):
+            return []
+        with open(self.path, "rb") as pdf:
+            reader = PyPDF2.PdfReader(pdf, strict=False)
+            pdf_text = []
+            for page in reader.pages:
+                content = page.extract_text()
+                pdf_text.append(content)
+
+        return pdf_text
+
+    def extract_text(self) -> list[str]:
+        if not self.check_path(self.path):
+            return []
+        with open(self.path, "rb") as pdf:
             reader = PyPDF2.PdfReader(pdf, strict=False)
             pdf_text = []
             for page in reader.pages:
@@ -70,7 +86,9 @@ class PYpdf:
                 })
 
         return upcs_and_costs
-    
-    def check_path(self, path):
-        return os.path.isfile(path)
-    
+
+    def check_path(self, path) -> bool:
+
+        if os.path.exists(path) and (path.endswith('.PDF') or path.endswith('.pdf')):
+            return os.path.isfile(path)
+        return False

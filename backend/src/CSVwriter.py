@@ -1,5 +1,5 @@
 import csv
-from PDFextractor import PDFUPCExtractor
+# from PDFextractor import PDFUPCExtractor
 
 class CSV_writer:
     def __init__(self):
@@ -8,7 +8,7 @@ class CSV_writer:
         with open(self.file_path, mode='w', newline='') as file:
             file.write('')  # Create or clear the file
         
-        self.extractor = PDFUPCExtractor("..\\uploads\\DougPriceChg.pdf")
+        # self.extractor = PDFUPCExtractor("..\\uploads\\DougPriceChg.pdf")
 
     def write(self, product, updated_cost = 0, updated_price = 0, description='', manufacturer='', brand='', is_active=1, vendor='', part_num='', part_num_units='', part_cost='', child_upc='', num_units=''):
         fieldNames = ['upc', 'name', 'description', 'department', 'department_number', 'category',

@@ -5,37 +5,39 @@ from flask import request, jsonify, send_file
 from database import ProductDatabase
 # Import routes so they register with the app
 import routes_products
-import PDFextractor 
+# import PDFextractor 
 import CSVwriter
 from pdf import PYpdf
 
 
 
-extractor = PYpdf()
+
 db_product = ProductDatabase()
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    os.makedirs('uploads', exist_ok=True)
-    print("Received request to upload file")
     if 'file' not in request.files:
+        print("No file part in the request")
         return {'error': 'No file part'}, 400
     file = request.files['file']
     if file.filename == '':
+        print("No selected file")
         return {'error': 'No selected file'}, 400
+    global pdf_path
+    pdf_path = os.path.join(os.getcwd(), 'uploads', file.filename)
+    global extractor
+    extractor = PYpdf(pdf_path)
+    print("Saving to uploads/")
     file.save(os.path.join('uploads', file.filename))
-    return {'message': 'File uploaded successfully'}, 200
+    if extractor.check_path(pdf_path):
+        return {'message': 'File uploaded successfully'}, 200
+    
+    return {'error': 'Invalid file path'}, 400
 
 
 @app.route('/extract_upcs', methods=['GET'])
 def extract_upcs():
     print("Received request to extract UPCs from PDF")
-    os.makedirs('uploads', exist_ok=True)
-    pdf_path = 'uploads/DougPriceChg.pdf'
-
-    if not extractor.check_path(pdf_path):
-        print("PDF file not found")
-        return {'error': 'PDF file not found'}, 404
 
     texts = extractor.extract_text()
     upcs_and_costs = extractor.extract_upc_and_cost(texts)
@@ -97,11 +99,16 @@ def write_to_csv(products:list):
 
 @app.route('/updated-cost-csv', methods=['GET'])
 def download_updated_cost_csv():
-    csv_path = os.path.join('csv', 'updated_cost.csv')
+    if os.getcwd().endswith('src'):
+        os.chdir('..')
+    
+    csv_path = os.path.join(os.getcwd(), 'csv', 'updated_cost.csv')
 
     if not os.path.exists(csv_path):
         return {'error': 'CSV file not found'}, 404
     return send_file(csv_path, mimetype='text/csv', as_attachment=True, download_name='updated_cost.csv')
+
+
 @app.route('/Login', methods=['POST'])
 def login():
     data = request.get_json()

@@ -46,7 +46,7 @@ function PricePreview() {
                 });
                 const data = await (response as Response).json();
                 console.log('Comparison Result:', data);
-                //fetchAndDownloadCSV();
+                fetchAndDownloadCSV();
             } catch (error) {
                 console.error('Error comparing data:', error);
             }
