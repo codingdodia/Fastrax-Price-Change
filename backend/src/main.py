@@ -3,18 +3,12 @@ import os
 from FastraxPOS import FastraxPOS
 from flask import request, jsonify, send_file
 from database import ProductDatabase
-# Import routes so they register with the app
-import routes_products
-# import PDFextractor 
+import copy
 import CSVwriter
 from pdf import PYpdf
 
 # Always resolve base directory for file operations
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-
-
 db_product = ProductDatabase()
 
 @app.route('/upload', methods=['POST'])
@@ -59,34 +53,31 @@ def compare_upcs():
     if not upc_list:
         return {'error': 'No UPCs provided'}, 400
 
-    matched_products = []
+    matched_products_upcs = []
     for item in upc_list:
         product = db_product.get_product_details(item['upc'])
         if product is not None:
             if 'cost' in item and item['cost'] != '.0000':
                 product['cost'] = item['cost']
 
-            matched_products.append(product)
+            matched_products_upcs.append(product)
         else:
             continue
 
-
-    result = write_to_csv(matched_products)
+    
+    if not matched_products_upcs:
+        return jsonify({"error": "No matching products found."}), 404
+    return jsonify(matched_products_upcs), 200
 
     
-
-    if result:
-        return jsonify(matched_products), 200
-    else:
-        return jsonify({"error": "Failed to write products to CSV."}), 500
-    
+@app.route('/write_products_to_csv', methods=['POST'])
+def write_to_csv():
 
 
-def write_to_csv(products:list):
     csv = CSVwriter.CSV_writer()
     print("Writing matched products to CSV...")
 
-    return csv.write_products_to_csv(products)
+    return csv.write_products_to_csv(matched_products)
 
 
 @app.route('/updated-cost-csv', methods=['GET'])
@@ -122,44 +113,75 @@ def get_mass_products():
     return jsonify({"message":  f"{count} Products' data fetched and stored in database."}), 200
 
 
-def matched_upcs_depts(matched_products):
+def matched_upcs_depts(passed_in_matched_products, dept_names):
     """Count the number of products in each department for matched UPCs."""
 
-    
-    dept_count = {} 
-    for product in matched_products:
+
+    dept_count = {}
+    for product in passed_in_matched_products:
         #print(product)
-        product_dept_num = product['department_num']
-        if product_dept_num:
-            dept_count[product_dept_num] = dept_count.get(product_dept_num, 0) + 1
+        product_dept_name = product['department_name']
+        if product_dept_name in dept_names:
+            dept_count[product_dept_name] = dept_count.get(product_dept_name, 0) + 1
+    print(dept_count)
 
     return dept_count
 @app.route('/get_dept_list', methods=['POST'])
 def get_dept_list():
 
     data = request.get_json()
-
-    products = data.get('matched_products', [])
-    print(type(products))
-    print(len(products))  # Should be a list of product dictionaries
+    global matched_products
+    matched_products = data.get('matched_products', [])  # Should be a list of product dictionaries
 
     # Process products as needed
 
-    matched_depts = matched_upcs_depts(products)
     dept_names = db_product.get_department_names()
+    depts_counts = matched_upcs_depts(matched_products, dept_names)
 
-    depts_counts = []
-
-    for (dept_num, count), dept_name in zip(matched_depts.items(), dept_names):
-        depts_counts.append({
-            "department_name": dept_name,
-            "product_count": count
-        })
+    
 
     return jsonify({"deptCount": depts_counts}), 200
 
+@app.route('/update_prices', methods=['POST'])
+def update_prices():
+
+    data = request.get_json()
+    print(data)
+
+    matched_products_copy = copy.deepcopy(matched_products)
+    #print(matched_products_copy)
+    products_updated = []
+    old_products = []
+    for product in matched_products_copy:
+        if product['department_name'] == data['department']:
+            old_products.append(copy.deepcopy(product))
+            if data['isPercent']:
+                product['price'] = round(float(product['price']) * (1 + float(data['value']) / 100), 2)
+                products_updated.append(product)
+            else:
+                product['price'] = round(float(product['price']) + float(data['value']), 2)
+
+                products_updated.append(product)
+
+    return jsonify({'products_updated': products_updated, 'old_products': old_products}), 200
+
+@app.route('/confirm_prices', methods=['POST'])
+def confirm_prices():
+    data = request.get_json()
+    
+    products_updated = []
+    for product in matched_products:
+        if product['department_name'] == data['department']:
+            if data['isPercent']:
+                product['price'] = round(float(product['price']) * (1 + float(data['value']) / 100), 2)
+                products_updated.append(product)
+            else:
+                product['price'] = round(float(product['price']) + float(data['value']), 2)
+
+                products_updated.append(product)
 
 
+    return jsonify({'products_updated': products_updated, 'message': 'Prices confirmed!'}), 200
 
 if __name__ == '__main__':
 

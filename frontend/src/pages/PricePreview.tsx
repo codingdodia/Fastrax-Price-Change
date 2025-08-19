@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import HomeButton from '../Components/HomeButton';
 // import axios from 'axios';
 
@@ -14,8 +14,13 @@ async function fetchWithTimeout(resource: RequestInfo, options: RequestInit = {}
 
 
 function PricePreview() {
+    const [productsToConfirm, setProductsToConfirm] = useState<any[] | null>(null);
+    const [oldProducts, setOldProducts] = useState<any[] | null>(null);
+    const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
     const [matchedProducts, setMatchedProducts] = useState<any[]>([]);
     const [extractedData, setExtractedData] = useState<any>(null);
+
+    // Debug: log matchedProducts and departments
     
 
     useEffect(() => {
@@ -64,6 +69,13 @@ function PricePreview() {
     // Download CSV on button click
     const fetchAndDownloadCSV = async () => {
         try {
+            // Call write_to_csv API first
+            await fetch('http://localhost:5000/write_to_csv', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ matched_products: matchedProducts || [] }),
+            });
+            // Then download the CSV
             const response = await fetch('http://localhost:5000/updated-cost-csv', {
                 method: 'GET',
                 headers: {
@@ -86,10 +98,7 @@ function PricePreview() {
     // You can now use extractedData for another API call or display
 
     const [changePrices, setChangePrices] = useState<null | boolean>(null);
-    // departmentsDict: { [name: string]: number }
-    const [departmentsDict, setDepartmentsDict] = useState<{ [name: string]: number }>({});
-    // upcDeptMap: { [name: string]: string[] }
-    const [upcDeptMap, setUpcDeptMap] = useState<{ [name: string]: string[] }>({});
+    const [departments, setDepartments] = useState<{ department_name: string, product_count: string}[]>([]);
     const [selectedDept, setSelectedDept] = useState<string>('');
     const [priceValue, setPriceValue] = useState<string>('');
     const [isPercent, setIsPercent] = useState<boolean>(false);
@@ -106,18 +115,79 @@ function PricePreview() {
                     });
                     const data = await response.json();
                     console.log('Departments Data:', data);
-                    const deptCount = data.deptCount || {};
-                    const upcDept = data.upcDept || {};
-                    setDepartmentsDict(deptCount);
-                    setUpcDeptMap(upcDept);
+                    // If response is { deptCount: { 'TOBACCO': 240, ... } }
+                    if (data && typeof data === 'object' && data.deptCount && typeof data.deptCount === 'object' && !Array.isArray(data.deptCount)) {
+                        const deptArr = Object.entries(data.deptCount).map(([department_name, product_count]) => ({ department_name, product_count: String(product_count) }));
+                        setDepartments(deptArr);
+                    } else if (data && typeof data === 'object' && !Array.isArray(data) && !data.deptCount) {
+                        const deptArr = Object.entries(data).map(([department_name, product_count]) => ({ department_name, product_count: String(product_count) }));
+                        setDepartments(deptArr);
+                    } else if (data.deptCount && Array.isArray(data.deptCount)) {
+                        setDepartments(data.deptCount);
+                    } else {
+                        setDepartments([]);
+                    }
                 } catch (e) {
-                    setDepartmentsDict({});
-                    setUpcDeptMap({});
+                    setDepartments([]);
                 }
             };
             fetchDepartments();
         }
     }, [changePrices]);
+
+    // Handle submit for price update
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedDept || !priceValue) {
+            alert('Please select a department and enter a value.');
+            return;
+        }
+        const payload = {
+            department: selectedDept,
+            value: priceValue,
+            isPercent: isPercent
+        };
+        try {
+            const response = await fetch('http://localhost:5000/update_prices', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await response.json();
+            console.log('Price Update Response:', data);
+            if (data.products_updated && data.old_products) {
+                setProductsToConfirm(data.products_updated);
+                setOldProducts(data.old_products);
+            } else {
+                alert('Price update request sent!');
+            }
+        } catch (error) {
+            alert('Error sending price update request.');
+        }
+    };
+
+    const handleConfirmPrices = async () => {
+
+        const payload = {
+            department: selectedDept,
+            isPercent: isPercent,
+            value: priceValue
+        }
+        try {
+            const response = await fetch('http://localhost:5000/confirm_prices', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await response.json();
+            alert(data.message || 'Prices confirmed!');
+            setConfirmationMessage(data.message || 'Prices confirmed!');
+            setProductsToConfirm(null);
+            setOldProducts(null);
+        } catch (error) {
+            setConfirmationMessage('Error confirming prices.');
+        }
+    };
 
     return (
         <div>
@@ -132,13 +202,13 @@ function PricePreview() {
                 <button onClick={fetchAndDownloadCSV} style={{margin: '16px 0', padding: '8px 16px', fontSize: '16px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px'}}>Download CSV</button>
             )}
             {changePrices === true && (
-                <div style={{margin: '24px 0', padding: '16px', border: '1px solid #ccc', borderRadius: '8px', maxWidth: 400}}>
+                <form onSubmit={handleSubmit} style={{margin: '24px 0', padding: '16px', border: '1px solid #ccc', borderRadius: '8px', maxWidth: 400}}>
                     <div style={{marginBottom: '12px'}}>
                         <label htmlFor="department-select">Select Department:</label><br />
                         <select id="department-select" value={selectedDept} onChange={e => setSelectedDept(e.target.value)} style={{width: '100%', padding: '6px', marginTop: '4px'}}>
                             <option value="">-- Select --</option>
-                            {Object.entries(departmentsDict).map(([dept, count], idx) => (
-                                <option key={idx} value={dept}>{dept} ({count} products)</option>
+                            {departments.map((dept, idx) => (
+                                <option key={idx} value={dept.department_name}>{dept.department_name} ({dept.product_count} products)</option>
                             ))}
                         </select>
                     </div>
@@ -148,12 +218,37 @@ function PricePreview() {
                     </div>
                     <div style={{marginBottom: '12px'}}>
                         <label>Change Type:</label><br />
-                        <button onClick={() => setIsPercent(false)} style={{marginRight: '8px', padding: '6px 14px', background: !isPercent ? '#007bff' : '#eee', color: !isPercent ? '#fff' : '#000', border: 'none', borderRadius: '4px'}}>Dollar ($)</button>
-                        <button onClick={() => setIsPercent(true)} style={{padding: '6px 14px', background: isPercent ? '#007bff' : '#eee', color: isPercent ? '#fff' : '#000', border: 'none', borderRadius: '4px'}}>Percent (%)</button>
+                        <button type="button" onClick={() => setIsPercent(false)} style={{marginRight: '8px', padding: '6px 14px', background: !isPercent ? '#007bff' : '#eee', color: !isPercent ? '#fff' : '#000', border: 'none', borderRadius: '4px'}}>Dollar ($)</button>
+                        <button type="button" onClick={() => setIsPercent(true)} style={{padding: '6px 14px', background: isPercent ? '#007bff' : '#eee', color: isPercent ? '#fff' : '#000', border: 'none', borderRadius: '4px'}}>Percent (%)</button>
                     </div>
-                    {/* You can add a submit button here to trigger the update */}
-                </div>
+                    <button type="submit" style={{marginTop: '12px', padding: '8px 16px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '16px'}}>Submit</button>
+                </form>
             )}
+        {productsToConfirm && oldProducts && (
+            <div style={{marginTop: '32px'}}>
+                <h3>Confirm Price Updates</h3>
+                <table style={{width: '100%', borderCollapse: 'collapse', marginBottom: '16px'}}>
+                    <thead>
+                        <tr>
+                            <th style={{border: '1px solid #ccc', padding: '8px'}}>Product Name</th>
+                            <th style={{border: '1px solid #ccc', padding: '8px'}}>Old Price</th>
+                            <th style={{border: '1px solid #ccc', padding: '8px'}}>New Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {productsToConfirm.map((prod, idx) => (
+                            <tr key={prod.upc || idx}>
+                                <td style={{border: '1px solid #ccc', padding: '8px'}}>{prod.name || prod.product_name || prod.upc}</td>
+                                <td style={{border: '1px solid #ccc', padding: '8px'}}>{oldProducts[idx]?.price ?? 'N/A'}</td>
+                                <td style={{border: '1px solid #ccc', padding: '8px'}}>{prod.price}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                <button onClick={handleConfirmPrices} style={{padding: '8px 16px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '16px'}}>Confirm Prices</button>
+                {confirmationMessage && <div style={{marginTop: '12px', color: '#007bff'}}>{confirmationMessage}</div>}
+            </div>
+        )}
         </div>
     );
 }
