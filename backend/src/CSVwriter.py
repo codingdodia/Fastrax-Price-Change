@@ -1,10 +1,16 @@
+# import os for file path operations
+import os
 import csv
 # from PDFextractor import PDFUPCExtractor
 
 class CSV_writer:
     def __init__(self):
-        self.file_path = "..\\csv\\updated_cost.csv"
-
+        # Always resolve the path relative to this file's directory
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.file_path = os.path.join(base_dir, '..', 'csv', 'updated_cost.csv')
+        self.file_path = os.path.normpath(self.file_path)
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         with open(self.file_path, mode='w', newline='') as file:
             file.write('')  # Create or clear the file
         
@@ -74,25 +80,10 @@ class CSV_writer:
             writer.writerow(['upc','name','description','department','department_number','category','manufacturer','brand','is_active','cost','price','vendor','part_num','part_num_units','part_cost','child_upc','num_units'])
             # Prepare all rows
             rows = []
-
-            # Update costs using PDF extractor
-            # print("Updating product costs using PDF extractor...")
-            # for product in products:
-            #     extractor_count += 1
-            #     print(f"Processing product {extractor_count}/{len(products)}: {product['name']} ({product['upc']})")
-            #     upc_type = self.extractor.get_upc_type(product['upc'])
-            #     if upc_type == 1:
-            #         unit_cost = self.extractor.extract_unit_cost(product['upc'])
-            #         if unit_cost is not None:
-            #             product['cost'] = unit_cost
-            #     elif upc_type == 0:
-            #         case_cost = self.extractor.extract_case_cost(product['upc'])
-            #         if case_cost is not None:
-            #             product['cost'] = case_cost
             count = 0
             for product in products:
                 count += 1
-                print(f"Processing product {count}/{len(products)}: {product['name']} ({product['upc']})")
+                #print(f"Processing product {count}/{len(products)}: {product['name']} ({product['upc']})")
                 rows.append([
                     product.get('upc', ''),
                     product.get('name', ''),

@@ -9,6 +9,9 @@ import routes_products
 import CSVwriter
 from pdf import PYpdf
 
+# Always resolve base directory for file operations
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 
 
@@ -24,11 +27,16 @@ def upload_file():
         print("No selected file")
         return {'error': 'No selected file'}, 400
     global pdf_path
-    pdf_path = os.path.join(os.getcwd(), 'uploads', file.filename)
+    uploads_dir = os.path.join(BASE_DIR, 'uploads')
+    os.makedirs(uploads_dir, exist_ok=True)
+    pdf_path = os.path.join(uploads_dir, file.filename)
+    # Remove old file if it exists
+    if os.path.exists(pdf_path):
+         os.remove(pdf_path)
     global extractor
     extractor = PYpdf(pdf_path)
     print("Saving to uploads/")
-    file.save(os.path.join('uploads', file.filename))
+    file.save(pdf_path)
     if extractor.check_path(pdf_path):
         return {'message': 'File uploaded successfully'}, 200
     
@@ -65,45 +73,26 @@ def compare_upcs():
 
     result = write_to_csv(matched_products)
 
+    
+
     if result:
-        return jsonify({"message": "Products matched and written to CSV successfully."}), 200
+        return jsonify(matched_products), 200
     else:
         return jsonify({"error": "Failed to write products to CSV."}), 500
     
 
 
 def write_to_csv(products:list):
-    #pdf_path = "..\\uploads\\DougPriceChg.PDF"
-    #extractor = PDFextractor.PDFUPCExtractor(pdf_path)
     csv = CSVwriter.CSV_writer()
     print("Writing matched products to CSV...")
 
     return csv.write_products_to_csv(products)
 
-    # for product in products:
-    #     upc_type = extractor.get_upc_type(product['upc'])
-    #     if upc_type == 1:
-    #         unit_cost = extractor.extract_unit_cost(product['upc'])
-    #         if unit_cost is not None:
-    #             csv.write_products_to_csv(product, updated_cost=unit_cost)
-    #         else:
-    #             csv.write(product)
-    #     elif upc_type == 0:
-    #         case_cost = extractor.extract_case_cost(product['upc'])
-    #         if case_cost is not None:
-    #             csv.write_products_to_csv(product, updated_cost=case_cost)
-    #         else:
-    #             csv.write_products_to_csv(product)
-    #     else:
-    #         csv.write_products_to_csv(product)
 
 @app.route('/updated-cost-csv', methods=['GET'])
 def download_updated_cost_csv():
-    if os.getcwd().endswith('src'):
-        os.chdir('..')
-    
-    csv_path = os.path.join(os.getcwd(), 'csv', 'updated_cost.csv')
-
+    csv_path = os.path.join(BASE_DIR, '..', 'csv', 'updated_cost.csv')
+    csv_path = os.path.normpath(csv_path)
     if not os.path.exists(csv_path):
         return {'error': 'CSV file not found'}, 404
     return send_file(csv_path, mimetype='text/csv', as_attachment=True, download_name='updated_cost.csv')
@@ -131,6 +120,45 @@ def get_mass_products():
             count += 1
 
     return jsonify({"message":  f"{count} Products' data fetched and stored in database."}), 200
+
+
+def matched_upcs_depts(matched_products):
+    """Count the number of products in each department for matched UPCs."""
+
+    
+    dept_count = {} 
+    for product in matched_products:
+        #print(product)
+        product_dept_num = product['department_num']
+        if product_dept_num:
+            dept_count[product_dept_num] = dept_count.get(product_dept_num, 0) + 1
+
+    return dept_count
+@app.route('/get_dept_list', methods=['POST'])
+def get_dept_list():
+
+    data = request.get_json()
+
+    products = data.get('matched_products', [])
+    print(type(products))
+    print(len(products))  # Should be a list of product dictionaries
+
+    # Process products as needed
+
+    matched_depts = matched_upcs_depts(products)
+    dept_names = db_product.get_department_names()
+
+    depts_counts = []
+
+    for (dept_num, count), dept_name in zip(matched_depts.items(), dept_names):
+        depts_counts.append({
+            "department_name": dept_name,
+            "product_count": count
+        })
+
+    return jsonify({"deptCount": depts_counts}), 200
+
+
 
 
 if __name__ == '__main__':

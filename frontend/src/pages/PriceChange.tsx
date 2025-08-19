@@ -1,6 +1,7 @@
 import React, { use, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
+import HomeButton from '../Components/HomeButton';
 
 
 type uploadStatus = 'idle' | 'uploading' | 'success' | 'error';
@@ -40,39 +41,39 @@ function PriceChange() {
         }
     }
 
-    return (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-            <div className="space-y-2" style={{ padding: '1rem' }}>
-                <h1>Price Change</h1>
-                <p>Upload a PDF file to change the price.</p>
-                <p> File name: {file?.name}</p>
-                <p
-                  style={
-                    status === 'uploading'
-                      ? { color: 'blue', fontWeight: 'bold' }
-                      : status === 'success'
-                      ? { color: 'green', fontWeight: 'bold' }
-                      : status === 'error'
-                      ? { color: 'red', fontWeight: 'bold' }
-                      : { color: 'gray' }
-                  }
-                >
-                  {status === 'uploading'
-                    ? 'Uploading...'
-                    : status === 'success'
-                    ? 'Upload successful!'
-                    : status === 'error'
-                    ? 'Upload failed.'
-                    : 'Waiting for upload'}
-                </p>
-                <form onSubmit={onSubmit}>
-                    {uploadFile(handleFileChange)}
-                    <button type="submit" className="btn btn-primary">Submit</button>
-                </form>
-            </div>
-        </div>
-
-    );
+        return (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                        <HomeButton />
+                        <div className="space-y-2" style={{ padding: '1rem' }}>
+                                <h1>Price Change</h1>
+                                <p>Upload a PDF file to change the price.</p>
+                                <p> File name: {file?.name}</p>
+                                <p
+                                    style={
+                                        status === 'uploading'
+                                            ? { color: 'blue', fontWeight: 'bold' }
+                                            : status === 'success'
+                                            ? { color: 'green', fontWeight: 'bold' }
+                                            : status === 'error'
+                                            ? { color: 'red', fontWeight: 'bold' }
+                                            : { color: 'gray' }
+                                    }
+                                >
+                                    {status === 'uploading'
+                                        ? 'Uploading...'
+                                        : status === 'success'
+                                        ? 'Upload successful!'
+                                        : status === 'error'
+                                        ? 'Upload failed.'
+                                        : 'Waiting for upload'}
+                                </p>
+                                <form onSubmit={onSubmit}>
+                                        {uploadFile(handleFileChange)}
+                                        <button type="submit" className="btn btn-primary">Submit</button>
+                                </form>
+                        </div>
+                </div>
+        );
 }
 
 function uploadFile(handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void) {

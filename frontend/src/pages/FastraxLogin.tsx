@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import HomeButton from '../Components/HomeButton';
 
 function FastraxLoginPage() {
     const [userName, setUserName] = useState<string>("");
@@ -65,6 +66,7 @@ function FastraxLoginPage() {
     };
     return (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+            <HomeButton />
             <div className="container" style={{ maxWidth: 400 }}>
                 <h1>Fastrax Login</h1>
                 <form onSubmit={handleSubmit}>
@@ -112,7 +114,7 @@ function FastraxLoginPage() {
                         <span>Fetched</span>
                     </div>
                 )}
-                <Link to="/welcome">Back to Home</Link>
+                {/* <Link to="/welcome">Back to Home</Link> */}
             </div>
         </div>
     );
