@@ -24,7 +24,6 @@ function PricePreview() {
     const [oldProducts, setOldProducts] = useState<any[] | null>(null);
     const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
     const [matchedProducts, setMatchedProducts] = useState<any[]>([]);
-    const [extractedData, setExtractedData] = useState<any>(null);
 
     // Debug: log matchedProducts and departments
     
@@ -41,8 +40,6 @@ function PricePreview() {
                 });
                 const data = await (response as Response).json();
                 console.log('Extracted Data:', data);
-                setExtractedData(data);
-                //console.log('Extracted Data:', data);
                 compareData(data.upcs_and_costs);
             } catch (error) {
                 console.error('Error extracting data from PDF:', error);
