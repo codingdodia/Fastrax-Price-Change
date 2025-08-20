@@ -70,7 +70,7 @@ def compare_upcs():
     return jsonify(matched_products_upcs), 200
 
     
-@app.route('/write_products_to_csv', methods=['POST'])
+@app.route('/write_to_csv', methods=['POST'])
 def write_to_csv():
 
 
@@ -169,6 +169,7 @@ def update_prices():
 def confirm_prices():
     data = request.get_json()
     
+    global matched_products
     products_updated = []
     for product in matched_products:
         if product['department_name'] == data['department']:

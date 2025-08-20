@@ -14,6 +14,12 @@ async function fetchWithTimeout(resource: RequestInfo, options: RequestInit = {}
 
 
 function PricePreview() {
+    // Handler to decline price change
+    const handleDeclinePrices = () => {
+        setProductsToConfirm(null);
+        setOldProducts(null);
+        setConfirmationMessage('Price change declined.');
+    };
     const [productsToConfirm, setProductsToConfirm] = useState<any[] | null>(null);
     const [oldProducts, setOldProducts] = useState<any[] | null>(null);
     const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
@@ -66,15 +72,27 @@ function PricePreview() {
         extractDataFromPDF();
     }, []);
 
-    // Download CSV on button click
-    const fetchAndDownloadCSV = async () => {
+    const writeToCsv = async () => {
         try {
-            // Call write_to_csv API first
-            await fetch('http://localhost:5000/write_to_csv', {
+            const response = await fetch('http://localhost:5000/write_to_csv', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ matched_products: matchedProducts || [] }),
             });
+            if (!response.ok) {
+                throw new Error('Failed to write to CSV');
+            }
+            console.log('CSV written successfully');
+        } catch (error) {
+            console.error('Error writing to CSV:', error);
+        }
+    };
+
+    // Download CSV on button click
+    const fetchAndDownloadCSV = async () => {
+        try {
+            // Call write_to_csv API first
+            await writeToCsv();
             // Then download the CSV
             const response = await fetch('http://localhost:5000/updated-cost-csv', {
                 method: 'GET',
@@ -190,65 +208,126 @@ function PricePreview() {
     };
 
     return (
-        <div>
-            <HomeButton />
-            <h2>Updated Cost</h2>
-            <div style={{margin: '16px 0'}}>
-                <p>Would you like to change prices?</p>
-                <button onClick={() => setChangePrices(true)} style={{marginRight: '8px', padding: '6px 14px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px'}}>Yes</button>
-                <button onClick={() => setChangePrices(false)} style={{padding: '6px 14px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px'}}>No</button>
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100vh',
+            width: '100vw',
+        }}>
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                maxWidth: 900,
+            }}>
+                <HomeButton />
+                <h2>Updated Cost</h2>
+                <div style={{margin: '16px 0', textAlign: 'center'}}>
+                    <p>Would you like to change prices?</p>
+                    <button onClick={() => setChangePrices(true)} style={{marginRight: '8px', padding: '6px 14px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px'}}>Yes</button>
+                    <button onClick={() => setChangePrices(false)} style={{padding: '6px 14px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px'}}>No</button>
+                </div>
+                {changePrices === false && (
+                    <button onClick={fetchAndDownloadCSV} style={{margin: '16px 0', padding: '8px 16px', fontSize: '16px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px'}}>Download CSV</button>
+                )}
+                {changePrices === true && (
+                    <form onSubmit={handleSubmit} style={{margin: '24px 0', padding: '16px', border: '1px solid #ccc', borderRadius: '8px', maxWidth: 400, textAlign: 'center'}}>
+                        <div style={{marginBottom: '12px'}}>
+                            <label htmlFor="department-select">Select Department:</label><br />
+                            <select id="department-select" value={selectedDept} onChange={e => setSelectedDept(e.target.value)} style={{width: '100%', padding: '6px', marginTop: '4px'}}>
+                                <option value="">-- Select --</option>
+                                {departments.map((dept, idx) => (
+                                    <option key={idx} value={dept.department_name}>{dept.department_name} ({dept.product_count} products)</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div style={{marginBottom: '12px'}}>
+                            <label>Price Change Value:</label><br />
+                            <input type="number" value={priceValue} onChange={e => setPriceValue(e.target.value)} style={{width: '100%', padding: '6px', marginTop: '4px'}} />
+                        </div>
+                        <div style={{marginBottom: '12px'}}>
+                            <label>Change Type:</label><br />
+                            <button type="button" onClick={() => setIsPercent(false)} style={{marginRight: '8px', padding: '6px 14px', background: !isPercent ? '#007bff' : '#eee', color: !isPercent ? '#fff' : '#000', border: 'none', borderRadius: '4px'}}>Dollar ($)</button>
+                            <button type="button" onClick={() => setIsPercent(true)} style={{padding: '6px 14px', background: isPercent ? '#007bff' : '#eee', color: isPercent ? '#fff' : '#000', border: 'none', borderRadius: '4px'}}>Percent (%)</button>
+                        </div>
+                        <button type="submit" style={{marginTop: '12px', padding: '8px 16px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '16px'}}>Submit</button>
+                    </form>
+                )}
+                {productsToConfirm && oldProducts && (
+                    <div style={{marginTop: '32px', width: '100%', maxWidth: 800, textAlign: 'center'}}>
+                        <h3>Confirm Price Updates</h3>
+                        <table style={{width: '100%', borderCollapse: 'collapse', marginBottom: '16px', marginLeft: 'auto', marginRight: 'auto'}}>
+                            <thead>
+                                <tr>
+                                    <th style={{border: '1px solid #ccc', padding: '8px'}}>Product Name</th>
+                                    <th style={{border: '1px solid #ccc', padding: '8px'}}>Old Price</th>
+                                    <th style={{border: '1px solid #ccc', padding: '8px'}}>New Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {productsToConfirm.map((prod, idx) => (
+                                    <tr key={prod.upc || idx}>
+                                        <td style={{border: '1px solid #ccc', padding: '8px'}}>{prod.name || prod.product_name || prod.upc}</td>
+                                        <td style={{border: '1px solid #ccc', padding: '8px'}}>{oldProducts[idx]?.price ?? 'N/A'}</td>
+                                        <td style={{border: '1px solid #ccc', padding: '8px'}}>{prod.price}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <div style={{display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '8px'}}>
+                            <button
+                                onClick={handleConfirmPrices}
+                                style={{
+                                    padding: '8px 16px',
+                                    background: '#28a745',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    fontSize: '16px',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Confirm Prices
+                            </button>
+                            <button
+                                onClick={handleDeclinePrices}
+                                title="Decline Price Change"
+                                style={{
+                                    padding: '8px 16px',
+                                    background: '#dc3545',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    fontSize: '16px',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                X
+                            </button>
+                        </div>
+                        {confirmationMessage && <div style={{marginTop: '12px', color: '#007bff'}}>{confirmationMessage}</div>}
+                    </div>
+                )}
+                {confirmationMessage && changePrices !== false && (
+                    <button
+                        onClick={fetchAndDownloadCSV}
+                        style={{
+                            margin: '16px 0',
+                            padding: '8px 16px',
+                            fontSize: '16px',
+                            background: '#007bff',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '4px'
+                        }}
+                    >
+                        Download CSV
+                    </button>
+                )}
             </div>
-            {changePrices === false && (
-                <button onClick={fetchAndDownloadCSV} style={{margin: '16px 0', padding: '8px 16px', fontSize: '16px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px'}}>Download CSV</button>
-            )}
-            {changePrices === true && (
-                <form onSubmit={handleSubmit} style={{margin: '24px 0', padding: '16px', border: '1px solid #ccc', borderRadius: '8px', maxWidth: 400}}>
-                    <div style={{marginBottom: '12px'}}>
-                        <label htmlFor="department-select">Select Department:</label><br />
-                        <select id="department-select" value={selectedDept} onChange={e => setSelectedDept(e.target.value)} style={{width: '100%', padding: '6px', marginTop: '4px'}}>
-                            <option value="">-- Select --</option>
-                            {departments.map((dept, idx) => (
-                                <option key={idx} value={dept.department_name}>{dept.department_name} ({dept.product_count} products)</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div style={{marginBottom: '12px'}}>
-                        <label>Price Change Value:</label><br />
-                        <input type="number" value={priceValue} onChange={e => setPriceValue(e.target.value)} style={{width: '100%', padding: '6px', marginTop: '4px'}} />
-                    </div>
-                    <div style={{marginBottom: '12px'}}>
-                        <label>Change Type:</label><br />
-                        <button type="button" onClick={() => setIsPercent(false)} style={{marginRight: '8px', padding: '6px 14px', background: !isPercent ? '#007bff' : '#eee', color: !isPercent ? '#fff' : '#000', border: 'none', borderRadius: '4px'}}>Dollar ($)</button>
-                        <button type="button" onClick={() => setIsPercent(true)} style={{padding: '6px 14px', background: isPercent ? '#007bff' : '#eee', color: isPercent ? '#fff' : '#000', border: 'none', borderRadius: '4px'}}>Percent (%)</button>
-                    </div>
-                    <button type="submit" style={{marginTop: '12px', padding: '8px 16px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '16px'}}>Submit</button>
-                </form>
-            )}
-        {productsToConfirm && oldProducts && (
-            <div style={{marginTop: '32px'}}>
-                <h3>Confirm Price Updates</h3>
-                <table style={{width: '100%', borderCollapse: 'collapse', marginBottom: '16px'}}>
-                    <thead>
-                        <tr>
-                            <th style={{border: '1px solid #ccc', padding: '8px'}}>Product Name</th>
-                            <th style={{border: '1px solid #ccc', padding: '8px'}}>Old Price</th>
-                            <th style={{border: '1px solid #ccc', padding: '8px'}}>New Price</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {productsToConfirm.map((prod, idx) => (
-                            <tr key={prod.upc || idx}>
-                                <td style={{border: '1px solid #ccc', padding: '8px'}}>{prod.name || prod.product_name || prod.upc}</td>
-                                <td style={{border: '1px solid #ccc', padding: '8px'}}>{oldProducts[idx]?.price ?? 'N/A'}</td>
-                                <td style={{border: '1px solid #ccc', padding: '8px'}}>{prod.price}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                <button onClick={handleConfirmPrices} style={{padding: '8px 16px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '16px'}}>Confirm Prices</button>
-                {confirmationMessage && <div style={{marginTop: '12px', color: '#007bff'}}>{confirmationMessage}</div>}
-            </div>
-        )}
         </div>
     );
 }
