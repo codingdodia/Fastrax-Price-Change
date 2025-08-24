@@ -1,4 +1,5 @@
 import sqlite3
+import sqlalchamey
 
 class ProductDatabase:
     def __init__(self, db_path='..\\database\\products.db'):
