@@ -1,14 +1,18 @@
 import sqlite3
-import sqlalchamey
+
 
 class ProductDatabase:
     def __init__(self, db_path='..\\database\\products.db'):
-        self.conn = sqlite3.connect(db_path, check_same_thread=False)
-        self.cursor = self.conn.cursor()
+        self.db_path = db_path
         self._create_table()
 
+    def _get_conn(self):
+        return sqlite3.connect(self.db_path, check_same_thread=True)
+
     def _create_table(self):
-        self.cursor.execute('''
+        conn = self._get_conn()
+        cursor = conn.cursor()
+        cursor.execute('''
             CREATE TABLE IF NOT EXISTS products (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 upc TEXT UNIQUE NOT NULL,
@@ -20,48 +24,57 @@ class ProductDatabase:
                 category TEXT NOT NULL
             )
         ''')
-        self.conn.commit()
-        self.cursor.close()
+        conn.commit()
+        cursor.close()
+        conn.close()
 
     def add_product(self, upc, name, department_name, department_num, cost, price, category) -> bool:
-        cursor = self.conn.cursor()
+        conn = self._get_conn()
+        cursor = conn.cursor()
         try:
             cursor.execute(
                 'INSERT INTO products (upc, name, department_name, department_num, cost, price, category) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                (upc, name, department_name, department_num, cost, price, category)
+                (str(upc), name, department_name, department_num, cost, price, category)
             )
-            self.conn.commit()
+            conn.commit()
             return True
         except sqlite3.IntegrityError:
-            self.update_product(upc, cost=cost, price=price, department_name=department_name, department_num=department_num, category=category)
+            self.update_product(str(upc), cost=cost, price=price, department_name=department_name, department_num=department_num, category=category)
             return False
+        finally:
+            cursor.close()
+            conn.close()
 
     def lookup_product(self, upc) -> bool:
-        
         """Check if a product with the given UPC exists in the database."""
-
-        cursor = self.conn.cursor()
-        cursor.execute('SELECT * FROM products WHERE upc = ?', (upc,))
-        product = cursor.fetchone()
-        cursor.close()
-
-        if product:
-            return True
-        else:
-            return False
-    
-    def get_product_details(self, upc, all_details:bool=True, details:list=None):
-        cursor = self.conn.cursor()
-        cursor.execute('SELECT * FROM products WHERE upc = ?', (upc,))
-
-        product = None
+        conn = self._get_conn()
+        cursor = conn.cursor()
         try:
+            cursor.execute('SELECT * FROM products WHERE upc = ?', (str(upc),))
             product = cursor.fetchone()
         except sqlite3.Error as e:
-            print (f"Error fetching product details: {e}")
+            print(f"Error fetching product: {e}")
+            product = None
+        finally:
+            cursor.close()
+            conn.close()
+        return bool(product)
+    
+    def get_product_details(self, upc, all_details:bool=True, details:list=None):
+        conn = self._get_conn()
+        cursor = conn.cursor()
+        product = None
+        try:
+            if upc is None or upc == '':
+                return None
+            cursor.execute('SELECT * FROM products WHERE upc = ?', (str(upc),))
+            product = cursor.fetchone()
+        except sqlite3.Error as e:
+            print (f"Error fetching product details: {e}, UPC: {upc}")
+        result = None
         if product:
             if all_details:
-                return {
+                result = {
                     'upc': product[1],
                     'name': product[2],
                     'department_name': product[3],
@@ -87,29 +100,29 @@ class ProductDatabase:
                         result['price'] = product[6]
                     elif detail == 'category':
                         result['category'] = product[7]
-                cursor.close()
-                return result
-            cursor.close()
-            return None
-        else:
-            cursor.close()
-            return None
+        cursor.close()
+        conn.close()
+        return result
         
     
     def get_department_names(self):
         """Retrieve all unique department names from the database."""
-        cursor = self.conn.cursor()
+        conn = self._get_conn()
+        cursor = conn.cursor()
         cursor.execute('SELECT DISTINCT department_name FROM products')
         departments = cursor.fetchall()
         cursor.close()
+        conn.close()
         return [dept[0] for dept in departments]
     
     def query_department(self, department_num):
         """Retrieve all products in a specific department."""
-        cursor = self.conn.cursor()
+        conn = self._get_conn()
+        cursor = conn.cursor()
         cursor.execute('SELECT * FROM products WHERE department_num = ?', (department_num,))
         products = cursor.fetchall()
         cursor.close()
+        conn.close()
         return [
             {
                 'upc': product[1],
@@ -123,7 +136,8 @@ class ProductDatabase:
         ]
 
     def update_product(self, upc, cost=None, price=None, department_name=None, department_num=None, category=None):
-        cursor = self.conn.cursor()
+        conn = self._get_conn()
+        cursor = conn.cursor()
         updates = []
         params = []
 
@@ -144,16 +158,19 @@ class ProductDatabase:
             params.append(category)
 
         if not updates:
+            cursor.close()
+            conn.close()
             return False
 
         params.append(upc)
         query = f'UPDATE products SET {", ".join(updates)} WHERE upc = ?'
         cursor.execute(query, params)
-        self.conn.commit()
+        conn.commit()
         cursor.close()
+        conn.close()
         return True
 
     def close(self):
-        self.conn.close()
+        pass  # No persistent connection to close
 
 

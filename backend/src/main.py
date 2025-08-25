@@ -5,11 +5,23 @@ from flask import request, jsonify, send_file
 from database import ProductDatabase
 import copy
 import CSVwriter
-from pdf import PYpdf
+from pdf import PYpdf 
+from FetchFastrax import FastTraxFetcher
 
 # Always resolve base directory for file operations
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 db_product = ProductDatabase()
+
+# Delete all files in uploads folder at server start
+uploads_dir = os.path.join(BASE_DIR, 'uploads')
+if os.path.exists(uploads_dir):
+    for filename in os.listdir(uploads_dir):
+        file_path = os.path.join(uploads_dir, filename)
+        try:
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            print(f"Failed to delete {file_path}: {e}")
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -94,20 +106,31 @@ def login():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
-    global fastrax_pos
-    fastrax_pos = FastraxPOS()
+    global fastrax_fetcher
+    fastrax_fetcher = FastTraxFetcher()
 
-    return fastrax_pos.login(username, password)
+    return fastrax_fetcher.login(username, password)
+    # global fastrax_pos
+    # fastrax_pos = FastraxPOS()
+
+    # return fastrax_pos.login(username, password)
 
 @app.route('/fetch_products_data', methods=['GET'])
-def get_mass_products():
+def fetch_all_products_data():
 
-    products = fastrax_pos.get_mass_products()
+    products = fastrax_fetcher.fetch_all_items()
     count = 0
     for product in products:
-        
-        if not db_product.lookup_product(product['upc']):
-            db_product.add_product(product)
+        if not db_product.lookup_product(product['upc'] and product['upc'] != ''):
+            db_product.add_product(
+                product['upc'],
+                product['name'],
+                product['department_name'],
+                product['department_num'],
+                product['cost'],
+                product['price'],
+                product['category']
+            )
             count += 1
 
     return jsonify({"message":  f"{count} Products' data fetched and stored in database."}), 200

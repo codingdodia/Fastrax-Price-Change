@@ -9,7 +9,8 @@ class FastTraxFetcher:
         self.logged_in = False
         self.products = []
         self.product = {
-                    "name": "", 
+                    "name": "",
+                    'upc': "",
                     "dept_name": "",
                     "department_num": "",
                     "cost": "",
@@ -17,7 +18,7 @@ class FastTraxFetcher:
                     "category": ""
                 }
 
-    def login(self, username, password):
+    def login(self, username, password) -> bool:
         # 1. Load the login page to get the CSRF token
         login_page = self.session.get("https://cc.fastraxpos.com/login")
         soup = BeautifulSoup(login_page.text, "html.parser")
@@ -37,10 +38,11 @@ class FastTraxFetcher:
         if response.url.endswith("/dashboard"):
             print("Login successful")
             self.logged_in = True
+            return {"message": "Login successful"}, 200
         else:
             print("Login failed")
             self.logged_in = False
-        return self.logged_in
+            return {"message": "Login failed"}, 401
 
     def go_to_mass_update(self):
         """Navigate to the Mass Updates page and fetch items,
@@ -87,11 +89,12 @@ class FastTraxFetcher:
 
         for item in items.get('data', []):
             self.product['name'] = item.get('product_name')
-            self.product['dept_name'] = item.get('department_name')
-            self.product['department_num'] = item.get('department_num')
+            self.product['upc'] = item.get('product_upc')
+            self.product['department_name'] = item.get('department_name')
+            self.product['department_num'] = item.get('department_number')
             self.product['cost'] = item.get('cost')
             self.product['price'] = item.get('price')
-            self.product['category'] = item.get('category_name')
+            self.product['category'] = item.get('category_path')
             self.products.append(self.product.copy())
             print(f"Product Name: {item.get('product_name')}, UPC: {item.get('product_upc')}")
 
@@ -119,10 +122,10 @@ class FastTraxFetcher:
             print(f"Retrieved {len(self.products)} products")
             return self.products
 
-if __name__ == "__main__":
-    fetcher = FastTraxFetcher()
-    if fetcher.login("mountain", "Ruhan2019"):
-        fetcher.fetch_all_items()
+# if __name__ == "__main__":
+#     fetcher = FastTraxFetcher()
+#     if fetcher.login("mountain", "Ruhan2019"):
+#         fetcher.fetch_all_items()
 
 
 
