@@ -5,6 +5,7 @@ class ProductDatabase:
     def __init__(self, db_path='..\\database\\products.db'):
         self.db_path = db_path
         self._create_table()
+        self.conn = sqlite3.connect(self.db_path, timeout=30, check_same_thread=True)
 
     def _get_conn(self):
         return sqlite3.connect(self.db_path, check_same_thread=True)
@@ -37,13 +38,12 @@ class ProductDatabase:
                 (str(upc), name, department_name, department_num, cost, price, category)
             )
             conn.commit()
-            return True
-        except sqlite3.IntegrityError:
-            self.update_product(str(upc), cost=cost, price=price, department_name=department_name, department_num=department_num, category=category)
-            return False
-        finally:
             cursor.close()
             conn.close()
+            return True
+        except sqlite3.IntegrityError:
+            self.update_product(str(upc), cursor=cursor, conn=conn, cost=cost, price=price, department_name=department_name, department_num=department_num, category=category)
+            return False
 
     def lookup_product(self, upc) -> bool:
         """Check if a product with the given UPC exists in the database."""
@@ -135,9 +135,13 @@ class ProductDatabase:
             } for product in products
         ]
 
-    def update_product(self, upc, cost=None, price=None, department_name=None, department_num=None, category=None):
-        conn = self._get_conn()
-        cursor = conn.cursor()
+    def update_product(self, upc, cost=None, price=None, department_name=None, department_num=None, category=None, cursor=None, conn=None):
+        if conn is None:
+            conn = self._get_conn()
+        
+        if cursor is None:
+            cursor = conn.cursor()
+
         updates = []
         params = []
 

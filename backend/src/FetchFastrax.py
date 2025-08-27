@@ -96,7 +96,7 @@ class FastTraxFetcher:
             self.product['price'] = item.get('price')
             self.product['category'] = item.get('category_path')
             self.products.append(self.product.copy())
-            print(f"Product Name: {item.get('product_name')}, UPC: {item.get('product_upc')}")
+            #print(f"Product Name: {item.get('product_name')}, UPC: {item.get('product_upc')}")
 
     def fetch_all_items(self):
         if not self.logged_in:

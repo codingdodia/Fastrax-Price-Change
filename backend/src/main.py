@@ -1,6 +1,5 @@
 from config import app
 import os
-from FastraxPOS import FastraxPOS
 from flask import request, jsonify, send_file
 from database import ProductDatabase
 import copy
