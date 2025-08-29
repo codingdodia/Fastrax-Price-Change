@@ -4,4 +4,5 @@ selenium
 selenium-wire
 PyPDF2
 blinker==1.0.0
-
+requests
+Flask-Cors
