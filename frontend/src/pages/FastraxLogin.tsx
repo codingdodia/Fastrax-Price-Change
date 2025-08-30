@@ -6,7 +6,7 @@ function FastraxLoginPage() {
     // Gracefully shutdown backend when tab is closed
     useEffect(() => {
         const handleBeforeUnload = () => {
-            navigator.sendBeacon('http://localhost:5000/shutdown');
+            navigator.sendBeacon('http://backend:5000/shutdown');
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => {
@@ -38,7 +38,7 @@ function FastraxLoginPage() {
         e.preventDefault();
         setLogInStatus('Logging in');
         try {
-            const response = await fetch('http://localhost:5000/Login', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/Login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ function FastraxLoginPage() {
     const handleLoginSuccess = async () => {
         setFetchStatus('fetching');
         try {
-            const response = await fetch('http://localhost:5000/fetch_products_data', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/fetch_products_data`, {
                 method: 'GET',
             }).then(res => res.json());
             setFetchStatus('fetched');

@@ -22,6 +22,10 @@ if os.path.exists(uploads_dir):
         except Exception as e:
             print(f"Failed to delete {file_path}: {e}")
 
+@app.route('/', methods=['GET'])
+def index():
+    return ("Hello Earth!")
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -228,18 +232,20 @@ def change_products_cost(upc_list, matched_products_copy):
 import threading
 import sys
 
+
 @app.route('/shutdown', methods=['POST'])
 def shutdown():
-    def shutdown_server():
-        func = request.environ.get('werkzeug.server.shutdown')
-        if func is None:
-            print('Not running with the Werkzeug Server')
-            sys.exit(0)
-        func()
-    threading.Thread(target=shutdown_server).start()
-    return jsonify({'message': 'Server shutting down...'}), 200
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        print('Shutdown not supported: Not running with the Werkzeug Server')
+        return jsonify({'message': 'Shutdown not supported on this server.'}), 501
+    else:
+        def shutdown_server():
+            func()
+        threading.Thread(target=shutdown_server).start()
+        return jsonify({'message': 'Server shutting down...'}), 200
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
 

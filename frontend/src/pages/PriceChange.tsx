@@ -9,7 +9,7 @@ function PriceChange() {
     // Gracefully shutdown backend when tab is closed
     useEffect(() => {
         const handleBeforeUnload = () => {
-            navigator.sendBeacon('http://localhost:5000/shutdown');
+            navigator.sendBeacon('http://backend:5000/shutdown');
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => {
@@ -39,7 +39,7 @@ function PriceChange() {
         const formData = new FormData();
         formData.append('file', file);
         try {
-            const response = await fetch('http://localhost:5000/upload', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
                 method: 'POST',
                 body: formData,
             });

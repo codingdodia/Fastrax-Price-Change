@@ -20,6 +20,7 @@ class FastTraxFetcher:
 
     def login(self, username, password) -> bool:
         # 1. Load the login page to get the CSRF token
+        print("Logging in...")
         login_page = self.session.get("https://cc.fastraxpos.com/login")
         soup = BeautifulSoup(login_page.text, "html.parser")
         token = soup.find("input", {"name": "_token"})["value"]

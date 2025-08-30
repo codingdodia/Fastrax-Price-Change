@@ -12,7 +12,7 @@ function PricePreview() {
     // Gracefully shutdown backend when tab is closed
     useEffect(() => {
         const handleBeforeUnload = () => {
-            navigator.sendBeacon('http://localhost:5000/shutdown');
+            navigator.sendBeacon('http://backend:5000/shutdown');
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => {
@@ -38,7 +38,7 @@ function PricePreview() {
 
         const extractDataFromPDF = async () => {
             try {
-                const response =  await fetch('http://localhost:5000/extract_upcs', {
+                    const response =  await fetch(`${import.meta.env.VITE_API_URL}/extract_upcs`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -56,7 +56,7 @@ function PricePreview() {
 
         const compareData = async (upcs_and_costs: { upc: string; cost: string }[]) => {
             try {
-                const response = await fetch('http://localhost:5000/compare_upcs', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/compare_upcs`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ function PricePreview() {
 
     const writeToCsv = async () => {
         try {
-            const response = await fetch('http://localhost:5000/write_to_csv', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/write_to_csv`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ matched_products: matchedProducts || [], upc_list: upcList }),
@@ -98,7 +98,7 @@ function PricePreview() {
             // Call write_to_csv API first
             await writeToCsv();
             // Then download the CSV
-            const response = await fetch('http://localhost:5000/updated-cost-csv', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/updated-cost-csv`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -130,7 +130,7 @@ function PricePreview() {
         if (changePrices === true) {
             const fetchDepartments = async () => {
                 try {
-                    const response = await fetch('http://localhost:5000/get_dept_list', {
+                    const response = await fetch(`${import.meta.env.VITE_API_URL}/get_dept_list`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ matched_products: matchedProducts || [] }),
@@ -171,7 +171,7 @@ function PricePreview() {
             upc_list: upcList
         };
         try {
-            const response = await fetch('http://localhost:5000/update_prices', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/update_prices`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -198,7 +198,7 @@ function PricePreview() {
             value: priceValue
         }
         try {
-            const response = await fetch('http://localhost:5000/confirm_prices', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/confirm_prices`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),

@@ -6,7 +6,7 @@ function Welcome() {
   // Gracefully shutdown backend when tab is closed
   useEffect(() => {
     const handleBeforeUnload = () => {
-      navigator.sendBeacon('http://localhost:5000/shutdown');
+      navigator.sendBeacon('http://backend:5000/shutdown');
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
