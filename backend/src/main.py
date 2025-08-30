@@ -55,6 +55,8 @@ def extract_upcs():
     texts = extractor.extract_text()
     upcs_and_costs = extractor.extract_upc_and_cost(texts)
 
+    print
+
     return {'upcs_and_costs': upcs_and_costs}, 200
 
 @app.route('/compare_upcs', methods=['POST'])
@@ -68,9 +70,6 @@ def compare_upcs():
     for item in upc_list:
         product = db_product.get_product_details(item['upc'])
         if product is not None:
-            if 'cost' in item and item['cost'] != '.0000':
-                product['cost'] = item['cost']
-
             matched_products_upcs.append(product)
         else:
             continue
@@ -84,9 +83,11 @@ def compare_upcs():
 @app.route('/write_to_csv', methods=['POST'])
 def write_to_csv():
 
-
+    data = request.get_json()
+    upc_list = data.get('upc_list', [])
     csv = CSVwriter.CSV_writer()
     print("Writing matched products to CSV...")
+
 
     return csv.write_products_to_csv(matched_products)
 
@@ -168,24 +169,27 @@ def get_dept_list():
 def update_prices():
 
     data = request.get_json()
-    print(data)
+    #print(data)
+
 
     matched_products_copy = copy.deepcopy(matched_products)
-    #print(matched_products_copy)
+    upcs_and_costs = data['upc_list']['upcs_and_costs']
+    print(upcs_and_costs)
+    matched_products_copy = change_products_cost(upcs_and_costs, matched_products_copy)
     products_updated = []
-    old_products = []
     for product in matched_products_copy:
         if product['department_name'] == data['department']:
-            old_products.append(copy.deepcopy(product))
+            print('Cost: ', product['cost'])
             if data['isPercent']:
                 product['price'] = round(float(product['price']) * (1 + float(data['value']) / 100), 2)
+                
                 products_updated.append(product)
             else:
                 product['price'] = round(float(product['price']) + float(data['value']), 2)
 
                 products_updated.append(product)
 
-    return jsonify({'products_updated': products_updated, 'old_products': old_products}), 200
+    return jsonify({'products_updated': products_updated, 'old_products': matched_products}), 200
 
 @app.route('/confirm_prices', methods=['POST'])
 def confirm_prices():
@@ -206,8 +210,36 @@ def confirm_prices():
 
     return jsonify({'products_updated': products_updated, 'message': 'Prices confirmed!'}), 200
 
-if __name__ == '__main__':
+def change_products_cost(upc_list, matched_products_copy):
 
+    for item in upc_list:
+        print('Processing item:', item)
+        if 'cost' in item and item['cost'] != '.0000':
+            print('Updating cost for UPC:', item['upc'], 'to', item['cost'])
+            for product in matched_products_copy:
+                if product['upc'] == item['upc']:
+                    product['cost'] = item['cost']
+
+    return matched_products_copy
+
+
+
+# Graceful shutdown endpoint
+import threading
+import sys
+
+@app.route('/shutdown', methods=['POST'])
+def shutdown():
+    def shutdown_server():
+        func = request.environ.get('werkzeug.server.shutdown')
+        if func is None:
+            print('Not running with the Werkzeug Server')
+            sys.exit(0)
+        func()
+    threading.Thread(target=shutdown_server).start()
+    return jsonify({'message': 'Server shutting down...'}), 200
+
+if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)
 
 

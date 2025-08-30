@@ -1,19 +1,24 @@
-import React, { use, useEffect, useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import HomeButton from '../Components/HomeButton';
 // import axios from 'axios';
 
-
-async function fetchWithTimeout(resource: RequestInfo, options: RequestInit = {}, timeout = 10000) {
-  return Promise.race([
-    fetch(resource, options),
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Request timed out")), timeout)
-    )
-  ]);
-}
-
+type UPCAndCost = {
+    upc: string;
+    cost: string;
+};
 
 function PricePreview() {
+    // Gracefully shutdown backend when tab is closed
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            navigator.sendBeacon('http://localhost:5000/shutdown');
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, []);
     // Handler to decline price change
     const handleDeclinePrices = () => {
         setProductsToConfirm(null);
@@ -24,6 +29,7 @@ function PricePreview() {
     const [oldProducts, setOldProducts] = useState<any[] | null>(null);
     const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
     const [matchedProducts, setMatchedProducts] = useState<any[]>([]);
+    const [upcList, setUpcList] = useState<string[]>([]);
 
     // Debug: log matchedProducts and departments
     
@@ -40,6 +46,7 @@ function PricePreview() {
                 });
                 const data = await (response as Response).json();
                 console.log('Extracted Data:', data);
+                setUpcList(data)
                 compareData(data.upcs_and_costs);
             } catch (error) {
                 console.error('Error extracting data from PDF:', error);
@@ -74,7 +81,7 @@ function PricePreview() {
             const response = await fetch('http://localhost:5000/write_to_csv', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ matched_products: matchedProducts || [] }),
+                body: JSON.stringify({ matched_products: matchedProducts || [], upc_list: upcList }),
             });
             if (!response.ok) {
                 throw new Error('Failed to write to CSV');
@@ -160,7 +167,8 @@ function PricePreview() {
         const payload = {
             department: selectedDept,
             value: priceValue,
-            isPercent: isPercent
+            isPercent: isPercent,
+            upc_list: upcList
         };
         try {
             const response = await fetch('http://localhost:5000/update_prices', {
@@ -173,6 +181,7 @@ function PricePreview() {
             if (data.products_updated && data.old_products) {
                 setProductsToConfirm(data.products_updated);
                 setOldProducts(data.old_products);
+                console.log(data.old_products)
             } else {
                 alert('Price update request sent!');
             }
@@ -262,16 +271,24 @@ function PricePreview() {
                                     <th style={{border: '1px solid #ccc', padding: '8px'}}>Product Name</th>
                                     <th style={{border: '1px solid #ccc', padding: '8px'}}>Old Price</th>
                                     <th style={{border: '1px solid #ccc', padding: '8px'}}>New Price</th>
+                                    <th style={{border: '1px solid #ccc', padding: '8px'}}>Old Cost</th>
+                                    <th style={{border: '1px solid #ccc', padding: '8px'}}>New Cost</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {productsToConfirm.map((prod, idx) => (
-                                    <tr key={prod.upc || idx}>
-                                        <td style={{border: '1px solid #ccc', padding: '8px'}}>{prod.name || prod.product_name || prod.upc}</td>
-                                        <td style={{border: '1px solid #ccc', padding: '8px'}}>{oldProducts[idx]?.price ?? 'N/A'}</td>
-                                        <td style={{border: '1px solid #ccc', padding: '8px'}}>{prod.price}</td>
-                                    </tr>
-                                ))}
+                                {productsToConfirm.map((prod, idx) => {
+                                    // Try to get old and new cost from both arrays
+                                    const oldProd = oldProducts[idx] || {};
+                                    return (
+                                        <tr key={prod.upc || idx}>
+                                            <td style={{border: '1px solid #ccc', padding: '8px'}}>{prod.name || prod.product_name || prod.upc}</td>
+                                            <td style={{border: '1px solid #ccc', padding: '8px'}}>{oldProd.price ?? 'N/A'}</td>
+                                            <td style={{border: '1px solid #ccc', padding: '8px'}}>{prod.price}</td>
+                                            <td style={{border: '1px solid #ccc', padding: '8px'}}>{oldProd.cost ?? oldProd.old_cost ?? 'N/A'}</td>
+                                            <td style={{border: '1px solid #ccc', padding: '8px'}}>{prod.cost ?? prod.new_cost ?? 'N/A'}</td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                         <div style={{display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '8px'}}>

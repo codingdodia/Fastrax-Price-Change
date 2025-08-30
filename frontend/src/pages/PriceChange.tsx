@@ -1,11 +1,23 @@
-import React, { use, useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
+// Import HomeButton if it exists in your components folder
 import HomeButton from '../Components/HomeButton';
 
-
 type uploadStatus = 'idle' | 'uploading' | 'success' | 'error';
+
 function PriceChange() {
+    // Gracefully shutdown backend when tab is closed
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            navigator.sendBeacon('http://localhost:5000/shutdown');
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, []);
+
+    // ...existing code...
     const navigate = useNavigate();
     const [file, setFile] = useState<File | null>(null);
     const [status, setStatus] = useState<uploadStatus>('idle');

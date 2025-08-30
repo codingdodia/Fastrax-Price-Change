@@ -3,6 +3,16 @@ import { Link } from "react-router-dom";
 import HomeButton from '../Components/HomeButton';
 
 function FastraxLoginPage() {
+    // Gracefully shutdown backend when tab is closed
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            navigator.sendBeacon('http://localhost:5000/shutdown');
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, []);
     const [userName, setUserName] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [logInStatus, setLogInStatus] = useState<'idle' | 'Logging in' | 'Success' | 'error'>('idle');
