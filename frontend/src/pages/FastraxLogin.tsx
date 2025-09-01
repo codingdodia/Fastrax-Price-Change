@@ -15,9 +15,12 @@ function FastraxLoginPage() {
     }, []);
     const [userName, setUserName] = useState<string>("");
     const [password, setPassword] = useState<string>("");
-    const [logInStatus, setLogInStatus] = useState<'idle' | 'Logging in' | 'Success' | 'error'>('idle');
+    const [logInStatus, setLogInStatus] = useState<'idle' | 'Logging in' | 'Success' | 'error' | '2fa'>('idle');
     const [fetchStatus, setFetchStatus] = useState<'idle' | 'fetching' | 'fetched' | 'error'>('idle');
     const [timer, setTimer] = useState<number>(0);
+    const [twoFACode, setTwoFACode] = useState<string>("");
+    const [logInResponse, setLogInResponse] = useState<any>(null);
+    const [twoFAError, setTwoFAError] = useState<string>("");
 
     useEffect(() => {
         let interval: ReturnType<typeof setInterval> | undefined;
@@ -52,12 +55,43 @@ function FastraxLoginPage() {
             if (data.message === "Login successful") {
                 setLogInStatus('Success');
                 handleLoginSuccess();
+            } else if (data.message && data.message.toLowerCase().includes('2fa')) {
+                setLogInStatus('2fa');
+                setLogInResponse(data.response);
             } else {
                 setLogInStatus('error');
             }
         } catch (error) {
             setLogInStatus('error');
             console.error('Error during login:', error);
+        }
+    };
+
+    const handle2FASubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setTwoFAError("");
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/2fa`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    code: twoFACode,
+                    response: logInResponse,
+                }),
+            });
+            const data = await response.json();
+                console.log('2FA response:', response.status, data);
+                if (response.status === 200) {
+                setLogInStatus('Success');
+                handleLoginSuccess();
+            } else {
+                setTwoFAError('Invalid 2FA code. Please try again.');
+            }
+        } catch (error) {
+            setTwoFAError('Error during 2FA. Please try again.');
+            console.error('Error during 2FA:', error);
         }
     };
 
@@ -79,34 +113,58 @@ function FastraxLoginPage() {
             <HomeButton />
             <div className="container" style={{ maxWidth: 400 }}>
                 <h1>Fastrax Login</h1>
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-3 d-flex align-items-center" style={{ gap: '8px' }}>
-                        <label htmlFor="exampleFormControlInput1" className="form-label" style={{ marginBottom: 0 }}>Username</label>
-                        <input
-                            type="text"
-                            className="form-control"
-                            id="exampleFormControlInput1"
-                            placeholder="Enter your username"
-                            value={userName}
-                            onChange={e => setUserName(e.target.value)}
-                            style={{ width: 'auto' }}
-                        />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <label htmlFor="inputPassword6" style={{ marginBottom: 0 }}>Password</label>
-                        <input
-                            type="password"
-                            id="inputPassword6"
-                            className="form-control"
-                            aria-describedby="passwordHelpInline"
-                            style={{ width: 'auto' }}
-                            placeholder="Enter your password"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                        />
-                    </div>
-                    <button type="submit" className="btn btn-primary">Login</button>
-                </form>
+                {logInStatus !== '2fa' ? (
+                    <form onSubmit={handleSubmit}>
+                        <div className="mb-3 d-flex align-items-center" style={{ gap: '8px' }}>
+                            <label htmlFor="exampleFormControlInput1" className="form-label" style={{ marginBottom: 0 }}>Username</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                id="exampleFormControlInput1"
+                                placeholder="Enter your username"
+                                value={userName}
+                                onChange={e => setUserName(e.target.value)}
+                                style={{ width: 'auto' }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <label htmlFor="inputPassword6" style={{ marginBottom: 0 }}>Password</label>
+                            <input
+                                type="password"
+                                id="inputPassword6"
+                                className="form-control"
+                                aria-describedby="passwordHelpInline"
+                                style={{ width: 'auto' }}
+                                placeholder="Enter your password"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                            />
+                        </div>
+                        <button type="submit" className="btn btn-primary">Login</button>
+                    </form>
+                ) : (
+                    <form onSubmit={handle2FASubmit}>
+                        <div className="mb-3 d-flex align-items-center" style={{ gap: '8px' }}>
+                            <label htmlFor="twoFACode" className="form-label" style={{ marginBottom: 0 }}>Enter 2FA Code</label>
+                            <input
+                                type="number"
+                                className="form-control"
+                                id="twoFACode"
+                                placeholder="2FA Code"
+                                value={twoFACode}
+                                onChange={e => setTwoFACode(e.target.value.replace(/[^0-9]/g, ''))}
+                                style={{ width: 'auto' }}
+                                required
+                            />
+                        </div>
+                        <button type="submit" className="btn btn-primary">Submit 2FA</button>
+                        {twoFAError && (
+                            <div className="mt-3" style={{ color: 'red', fontWeight: 'bold' }}>
+                                {twoFAError}
+                            </div>
+                        )}
+                    </form>
+                )}
                 {logInStatus === 'error' && (
                     <div className="mt-3" style={{ color: 'red', fontWeight: 'bold' }}>
                         Login failed. Please check your credentials and try again by re-entering your username and password.

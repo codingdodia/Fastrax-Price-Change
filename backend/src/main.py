@@ -65,6 +65,7 @@ def extract_upcs():
 
 @app.route('/compare_upcs', methods=['POST'])
 def compare_upcs():
+    db_product.add_user("mountain")
     response = request.get_json()
     upc_list = response.get('upcs_and_costs', [])
     if not upc_list:
@@ -112,12 +113,22 @@ def login():
     password = data.get('password')
     global fastrax_fetcher
     fastrax_fetcher = FastTraxFetcher()
+    db_product.add_user(username)
 
     return fastrax_fetcher.login(username, password)
     # global fastrax_pos
     # fastrax_pos = FastraxPOS()
 
     # return fastrax_pos.login(username, password)
+@app.route('/2fa', methods=['POST'])
+def complete_2FA():
+    data = request.get_json()
+    code = data.get('code')
+    response = data.get('response')
+    global fastrax_fetcher
+    if fastrax_fetcher:
+        return fastrax_fetcher.complete_2FA(code, response)
+    return {'error': 'Not logged in'}, 401
 
 @app.route('/fetch_products_data', methods=['GET'])
 def fetch_all_products_data():
@@ -164,8 +175,6 @@ def get_dept_list():
 
     dept_names = db_product.get_department_names()
     depts_counts = matched_upcs_depts(matched_products, dept_names)
-
-    
 
     return jsonify({"deptCount": depts_counts}), 200
 
