@@ -78,8 +78,6 @@ def compare_upcs():
             matched_products_upcs.append(product)
         else:
             continue
-
-    
     if not matched_products_upcs:
         return jsonify({"error": "No matching products found."}), 404
     return jsonify(matched_products_upcs), 200
@@ -92,10 +90,8 @@ def write_to_csv():
     upc_list = data.get('upc_list', [])
     csv = CSVwriter.CSV_writer()
     print("Writing matched products to CSV...")
-
-
+    
     return csv.write_products_to_csv(matched_products)
-
 
 @app.route('/updated-cost-csv', methods=['GET'])
 def download_updated_cost_csv():
@@ -182,17 +178,12 @@ def get_dept_list():
 def update_prices():
 
     data = request.get_json()
-    #print(data)
-
-
     matched_products_copy = copy.deepcopy(matched_products)
     upcs_and_costs = data['upc_list']['upcs_and_costs']
-    print(upcs_and_costs)
     matched_products_copy = change_products_cost(upcs_and_costs, matched_products_copy)
     products_updated = []
     for product in matched_products_copy:
         if product['department_name'] == data['department']:
-            print('Cost: ', product['cost'])
             if data['isPercent']:
                 product['price'] = round(float(product['price']) * (1 + float(data['value']) / 100), 2)
                 

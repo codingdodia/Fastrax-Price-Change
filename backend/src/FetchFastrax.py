@@ -92,7 +92,6 @@ class FastTraxFetcher:
             return {'message': 'Failed to retrieve items'}, 401
         
     def complete_2FA(self, code, url):
-        print(code)
         if not self.logged_in and not self.TwoFA_complete:
             print("Not logged in. Please login first.")
             return
@@ -107,10 +106,9 @@ class FastTraxFetcher:
             "trusted_device": "false"
         }
 
-        print(payload)
         response = self.session.post("https://cc.fastraxpos.com/otp/verify", params=payload)
         response_json = response.json()
-        print(response_json)
+
         if response_json.get("status") == True:
             print("2FA completed successfully")
             self.TwoFA_complete = True
@@ -162,7 +160,7 @@ class FastTraxFetcher:
 
 # if __name__ == "__main__":
 #     fetcher = FastTraxFetcher()
-#     url = fetcher.login("mountain", "Ruhan2019")
+#     url = fetcher.login("", "")
 #     if url:
 #         code = input("Enter 2FA code: ")
 #         while(True):
@@ -173,4 +171,4 @@ class FastTraxFetcher:
 #                         print(f"Product Name: {product['name']}, UPC: {product['upc']}")
 #                 break
 #             else:
-#                 code = input("Incorrect Code Re-Enter 2FA code: ")
+#                 code = input("Incorrect Code Re-Enter 2FA code: ")    
