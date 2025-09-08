@@ -24,6 +24,9 @@ if os.path.exists(uploads_dir):
         except Exception as e:
             print(f"Failed to delete {file_path}: {e}")
 
+@app.route('/api', methods=['GET'])
+def api_root():
+    return {'message': 'Welcome to the API'}, 200
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
