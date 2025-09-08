@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import { useNavigate } from "react-router-dom";
 // Import HomeButton if it exists in your components folder
 import HomeButton from '../Components/HomeButton';
@@ -6,16 +6,6 @@ import HomeButton from '../Components/HomeButton';
 type uploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
 function PriceChange() {
-    // Gracefully shutdown backend when tab is closed
-    useEffect(() => {
-        const handleBeforeUnload = () => {
-            navigator.sendBeacon('http://backend:5000/shutdown');
-        };
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-        };
-    }, []);
 
     // ...existing code...
     const navigate = useNavigate();
@@ -39,7 +29,7 @@ function PriceChange() {
         const formData = new FormData();
         formData.append('file', file);
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload`, {
                 method: 'POST',
                 body: formData,
             });

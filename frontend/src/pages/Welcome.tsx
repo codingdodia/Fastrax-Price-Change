@@ -1,18 +1,7 @@
 
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Welcome() {
-  // Gracefully shutdown backend when tab is closed
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      navigator.sendBeacon('http://backend:5000/shutdown');
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, []);
 
   const navigate = useNavigate();
 

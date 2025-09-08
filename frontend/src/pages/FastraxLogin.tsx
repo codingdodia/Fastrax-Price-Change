@@ -2,16 +2,6 @@ import React, { useState, useEffect } from "react";
 import HomeButton from '../Components/HomeButton';
 
 function FastraxLoginPage() {
-    // Gracefully shutdown backend when tab is closed
-    useEffect(() => {
-        const handleBeforeUnload = () => {
-            navigator.sendBeacon('http://backend:5000/shutdown');
-        };
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-        };
-    }, []);
     const [userName, setUserName] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [logInStatus, setLogInStatus] = useState<'idle' | 'Logging in' | 'Success' | 'error' | '2fa'>('idle');
@@ -40,7 +30,7 @@ function FastraxLoginPage() {
         e.preventDefault();
         setLogInStatus('Logging in');
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/Login`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/Login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -70,7 +60,7 @@ function FastraxLoginPage() {
         e.preventDefault();
         setTwoFAError("");
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/2fa`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/2fa`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -97,7 +87,7 @@ function FastraxLoginPage() {
     const handleLoginSuccess = async () => {
         setFetchStatus('fetching');
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/fetch_products_data`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/fetch_products_data`, {
                 method: 'GET',
             }).then(res => res.json());
             setFetchStatus('fetched');
