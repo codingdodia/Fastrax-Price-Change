@@ -3,10 +3,6 @@ import React, { useState, useEffect } from 'react';
 import HomeButton from '../Components/HomeButton';
 // import axios from 'axios';
 
-type UPCAndCost = {
-    upc: string;
-    cost: string;
-};
 
 function PricePreview() {
     // Gracefully shutdown backend when tab is closed
