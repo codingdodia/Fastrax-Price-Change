@@ -1,9 +1,17 @@
 import sqlite3
+import os
 
 
 class ProductDatabase:
-    def __init__(self, db_path='../database/products.db'):
-        self.db_path = db_path
+    def __init__(self, db_path=None):
+        if db_path is None:
+            # Use environment variable or default path
+            if os.environ.get('VERCEL'):
+                self.db_path = '/tmp/products.db'
+            else:
+                self.db_path = '../database/products.db'
+        else:
+            self.db_path = db_path
         self._create_table()
         self.conn = sqlite3.connect(self.db_path, timeout=30, check_same_thread=True)
         self.user_id = None
