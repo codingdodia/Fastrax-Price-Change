@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import HomeButton from '../Components/HomeButton';
+import { apiCall } from '../config/api';
 
 function FastraxLoginPage() {
     const [userName, setUserName] = useState<string>("");
@@ -28,7 +28,7 @@ function FastraxLoginPage() {
         e.preventDefault();
         setLogInStatus('Logging in');
         try {
-            const response = await fetch('http://localhost:5000/Login', {
+            const response = await fetch(apiCall('/Login'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -54,7 +54,7 @@ function FastraxLoginPage() {
     const handleLoginSuccess = async () => {
         setFetchStatus('fetching');
         try {
-            const response = await fetch('http://localhost:5000/fetch_products_data', {
+            const response = await fetch(apiCall('/fetch_products_data'), {
                 method: 'GET',
             }).then(res => res.json());
             setFetchStatus('fetched');

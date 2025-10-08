@@ -1,3 +1,4 @@
+import signal
 from config import app
 import os
 from flask import request, jsonify, send_file
@@ -6,7 +7,8 @@ import copy
 import CSVwriter
 from pdf import PYpdf 
 from FetchFastrax import FastTraxFetcher
-
+import threading
+import time
 # Always resolve base directory for file operations
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 db_product = ProductDatabase()
@@ -205,7 +207,23 @@ def confirm_prices():
 
 
     return jsonify({'products_updated': products_updated, 'message': 'Prices confirmed!'}), 200
+@app.route('/shutdown', methods=['POST'])
+def shutdown():
+    global shutdown_requested
+    shutdown_requested = True
+    
+    # Start shutdown in background thread
+    def delayed_shutdown():
+        time.sleep(1)  # Give time for response
+        print("Shutting down server...")
+        os.kill(os.getpid(), signal.SIGINT)
+    
+    threading.Thread(target=delayed_shutdown, daemon=True).start()
+    return jsonify({"message": "Shutdown initiated"})
 
+@app.route('/api/health')
+def health():
+    return jsonify({"status": "healthy", "shutdown_initiated": shutdown_requested})
 if __name__ == '__main__':
 
     app.run(host='127.0.0.1', port=5000, debug=True)

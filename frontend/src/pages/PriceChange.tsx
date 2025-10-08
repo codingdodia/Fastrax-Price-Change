@@ -1,7 +1,7 @@
-import React, { use, useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import HomeButton from '../Components/HomeButton';
+import { apiCall } from '../config/api';
 
 
 type uploadStatus = 'idle' | 'uploading' | 'success' | 'error';
@@ -27,7 +27,7 @@ function PriceChange() {
         const formData = new FormData();
         formData.append('file', file);
         try {
-            const response = await fetch('http://localhost:5000/upload', {
+            const response = await fetch(apiCall('/upload'), {
                 method: 'POST',
                 body: formData,
             });

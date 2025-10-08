@@ -1,17 +1,7 @@
-import React, { use, useEffect, useState } from 'react';
+import React, {useEffect, useState } from 'react';
 import HomeButton from '../Components/HomeButton';
+import { apiCall } from '../config/api';
 // import axios from 'axios';
-
-
-async function fetchWithTimeout(resource: RequestInfo, options: RequestInit = {}, timeout = 10000) {
-  return Promise.race([
-    fetch(resource, options),
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Request timed out")), timeout)
-    )
-  ]);
-}
-
 
 function PricePreview() {
     // Handler to decline price change
@@ -32,7 +22,7 @@ function PricePreview() {
 
         const extractDataFromPDF = async () => {
             try {
-                const response =  await fetch('http://localhost:5000/extract_upcs', {
+                const response =  await fetch(apiCall('/extract_upcs'), {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -49,7 +39,7 @@ function PricePreview() {
 
         const compareData = async (upcs_and_costs: { upc: string; cost: string }[]) => {
             try {
-                const response = await fetch('http://localhost:5000/compare_upcs', {
+                const response = await fetch(apiCall('/compare_upcs'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -71,7 +61,7 @@ function PricePreview() {
 
     const writeToCsv = async () => {
         try {
-            const response = await fetch('http://localhost:5000/write_to_csv', {
+            const response = await fetch(apiCall('/write_to_csv'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ matched_products: matchedProducts || [] }),
@@ -91,7 +81,7 @@ function PricePreview() {
             // Call write_to_csv API first
             await writeToCsv();
             // Then download the CSV
-            const response = await fetch('http://localhost:5000/updated-cost-csv', {
+            const response = await fetch(apiCall('/updated-cost-csv'), {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -123,7 +113,7 @@ function PricePreview() {
         if (changePrices === true) {
             const fetchDepartments = async () => {
                 try {
-                    const response = await fetch('http://localhost:5000/get_dept_list', {
+                    const response = await fetch(apiCall('/get_dept_list'), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ matched_products: matchedProducts || [] }),
@@ -163,7 +153,7 @@ function PricePreview() {
             isPercent: isPercent
         };
         try {
-            const response = await fetch('http://localhost:5000/update_prices', {
+            const response = await fetch(apiCall('/update_prices'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -189,7 +179,7 @@ function PricePreview() {
             value: priceValue
         }
         try {
-            const response = await fetch('http://localhost:5000/confirm_prices', {
+            const response = await fetch(apiCall('/confirm_prices'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
