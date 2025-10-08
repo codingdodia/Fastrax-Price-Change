@@ -4,14 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { useTabCloseHandler } from './hooks/TabClose';
 
 function App() {
-  const [showLogin] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
   const navigate = useNavigate();
   useTabCloseHandler();
 
   const handleFetch = () => {
     navigate('/fastraxLogin');
-    
-    showLogin(true);
+
+    setShowLogin(true);
   };
 
   return (
@@ -20,7 +20,7 @@ function App() {
       <button onClick={handleFetch} type="button" className="btn">Get Data from Fastrax POS</button>
       <button type="button" className="btn">Change price</button>
       {showLogin && <LoginForm />}
-      
+
     </div>
   );
 }
