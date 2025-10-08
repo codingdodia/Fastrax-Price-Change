@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
+// Import HomeButton if it exists in your components folder
 import HomeButton from '../Components/HomeButton';
 import { apiCall } from '../config/api';
 
 
 type uploadStatus = 'idle' | 'uploading' | 'success' | 'error';
+
 function PriceChange() {
+
+    // ...existing code...
     const navigate = useNavigate();
     const [file, setFile] = useState<File | null>(null);
     const [status, setStatus] = useState<uploadStatus>('idle');

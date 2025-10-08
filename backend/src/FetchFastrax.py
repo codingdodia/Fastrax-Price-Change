@@ -7,7 +7,9 @@ class FastTraxFetcher:
     def __init__(self):
         self.session = requests.Session()
         self.logged_in = False
+        self.TwoFA_complete = False
         self.products = []
+        self.token = None
         self.product = {
                     "name": "",
                     'upc': "",
@@ -20,19 +22,26 @@ class FastTraxFetcher:
 
     def login(self, username, password) -> bool:
         # 1. Load the login page to get the CSRF token
+        print("Logging in...")
         login_page = self.session.get("https://cc.fastraxpos.com/login")
         soup = BeautifulSoup(login_page.text, "html.parser")
-        token = soup.find("input", {"name": "_token"})["value"]
+        self._token = soup.find("input", {"name": "_token"})["value"]
 
         # 2. Prepare the payload with the token, email, and password
         payload = {
-            "_token": token,
+            "_token": self._token,
             "email": username,
             "password": password
         }
 
         # 3. Post the login form
         response = self.session.post("https://cc.fastraxpos.com/login", data=payload)
+
+        # Check for 2FA:
+        if response.url.endswith("/verify"):
+            print("2FA required")
+            self.logged_in = True
+            return {"message": "2FA required", "response": response.text}, 301
 
         # 4. Check if login was successful (look for dashboard or a known element)
         if response.url.endswith("/dashboard"):
@@ -80,7 +89,34 @@ class FastTraxFetcher:
             return response.json()
         else:
             print("Failed to retrieve items")
-            return None
+            return {'message': 'Failed to retrieve items'}, 401
+        
+    def complete_2FA(self, code, url):
+        if not self.logged_in and not self.TwoFA_complete:
+            print("Not logged in. Please login first.")
+            return
+        soup = BeautifulSoup(url, "html.parser")
+        email = soup.find("input", {"id": "otpEmail"})["value"]
+        token = soup.find("input", {"id": "token"})["value"]
+        payload = {
+            "otp": int(code),
+            "email": email,
+            "_token": self._token,
+            "token": token,
+            "trusted_device": "false"
+        }
+
+        response = self.session.post("https://cc.fastraxpos.com/otp/verify", params=payload)
+        response_json = response.json()
+
+        if response_json.get("status") == True:
+            print("2FA completed successfully")
+            self.TwoFA_complete = True
+            return {'message': '2FA completed successfully'}, 200
+        else:
+            print("Failed to complete 2FA")
+            self.TwoFA_complete = False
+            return {'message': 'Failed to complete 2FA'}, 401
 
     def process_items(self, items):
         if not items:
@@ -124,10 +160,15 @@ class FastTraxFetcher:
 
 # if __name__ == "__main__":
 #     fetcher = FastTraxFetcher()
-#     if fetcher.login("mountain", "Ruhan2019"):
-#         fetcher.fetch_all_items()
-
-
-
-
-
+#     url = fetcher.login("", "")
+#     if url:
+#         code = input("Enter 2FA code: ")
+#         while(True):
+#             if(fetcher.complete_2FA(code, url)):
+#                 products = fetcher.fetch_all_items()
+#                 if products:
+#                     for product in products:
+#                         print(f"Product Name: {product['name']}, UPC: {product['upc']}")
+#                 break
+#             else:
+#                 code = input("Incorrect Code Re-Enter 2FA code: ")    

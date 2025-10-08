@@ -11,6 +11,7 @@ function App() {
   const handleFetch = () => {
     navigate('/fastraxLogin');
     
+    setShowLogin(true);
   };
 
   return (
