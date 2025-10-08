@@ -1,25 +1,31 @@
 # Dependencies
+
 node_modules/
-__pycache__/
-*.pyc
+**pycache**/
+\*.pyc
 
 # Development files
+
 .env.development
-*.log
+\*.log
 
 # Build artifacts
+
 backend/csv/
 backend/database/
 backend/drivers/
 backend/instance/
 
 # OS files
+
 .DS_Store
 Thumbs.db
 
 # IDE files
+
 .vscode/
 .idea/
 
 # Git
+
 .git/
