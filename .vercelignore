@@ -8,7 +8,6 @@ __pycache__/
 *.log
 
 # Build artifacts
-frontend/dist/
 backend/csv/
 backend/database/
 backend/drivers/
