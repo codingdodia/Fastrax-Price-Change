@@ -34,14 +34,16 @@ This project contains both a React frontend and Python Flask backend that can be
 ### Environment Variables
 
 The frontend automatically detects the environment:
+
 - **Development**: Uses `http://localhost:5000` for API calls
 - **Production**: Uses `/api` prefix for API calls
 
 ### API Routes
 
 All backend routes are prefixed with `/api/` in production:
+
 - `/api/upload` - File upload endpoint
-- `/api/Login` - Authentication endpoint  
+- `/api/Login` - Authentication endpoint
 - `/api/fetch_products_data` - Data fetching endpoint
 - And all other existing routes...
 
