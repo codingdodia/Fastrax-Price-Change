@@ -15,8 +15,13 @@ CORS(app)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 db_product = ProductDatabase()
 
+# Set uploads directory based on environment
+if os.environ.get('VERCEL'):
+    uploads_dir = '/tmp/uploads'
+else:
+    uploads_dir = os.path.join(BASE_DIR, 'uploads')
+
 # Delete all files in uploads folder at server start
-uploads_dir = os.path.join(BASE_DIR, 'uploads')
 if os.path.exists(uploads_dir):
     for filename in os.listdir(uploads_dir):
         file_path = os.path.join(uploads_dir, filename)
