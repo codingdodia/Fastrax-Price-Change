@@ -18,14 +18,15 @@
   ],
   "routes": [
     {
+      "handle": "filesystem"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "backend/src/api.py"
-    }
-  ],
-  "rewrites": [
+    },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "installCommand": "cd frontend && npm install",
