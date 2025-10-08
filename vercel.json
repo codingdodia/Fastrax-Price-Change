@@ -20,10 +20,12 @@
     {
       "src": "/api/(.*)",
       "dest": "backend/src/api.py"
-    },
+    }
+  ],
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "installCommand": "cd frontend && npm install",
