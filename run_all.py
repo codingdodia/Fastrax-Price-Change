@@ -16,7 +16,7 @@ print('Backend started.')
 
 # Start frontend
 frontend_proc = subprocess.Popen(
-    ['npm', 'run', 'dev'],
+    ['npm', 'run', 'build'],
     cwd=FRONTEND_DIR,
     shell=True
 )

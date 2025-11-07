@@ -49,24 +49,11 @@ Fastrax-Price-Change/
 
 ### Backend Setup
 
-1. **Create and activate a virtual environment**
-   - **PowerShell:**
-     ```powershell
-     python -m venv venv
-     .\venv\Scripts\Activate.ps1
-     ```
-   - **Command Prompt:**
-     ```cmd
-     python -m venv venv
-     .\venv\Scripts\activate.bat
-     ```
-2. **Install dependencies**
+1. **Install BACKEND dependencies**
    ```sh
    pip install -r requirements.txt
    ```
-3. **Set up environment variables**
-   - Copy `backend/src/.env.example` to `backend/src/.env` and update values as needed.
-4. **Run the backend**
+2. **Run the backend**
    ```sh
    python backend/src/main.py
    ```

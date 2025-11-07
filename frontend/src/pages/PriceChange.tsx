@@ -1,11 +1,15 @@
-import React, { use, useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
+// Import HomeButton if it exists in your components folder
 import HomeButton from '../Components/HomeButton';
+import { apiCall } from '../config/api';
 
 
 type uploadStatus = 'idle' | 'uploading' | 'success' | 'error';
+
 function PriceChange() {
+
+    // ...existing code...
     const navigate = useNavigate();
     const [file, setFile] = useState<File | null>(null);
     const [status, setStatus] = useState<uploadStatus>('idle');
@@ -27,7 +31,7 @@ function PriceChange() {
         const formData = new FormData();
         formData.append('file', file);
         try {
-            const response = await fetch('http://localhost:5000/upload', {
+            const response = await fetch(apiCall('/upload'), {
                 method: 'POST',
                 body: formData,
             });

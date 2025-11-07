@@ -1,0 +1,31 @@
+# Dependencies
+
+node_modules/
+**pycache**/
+\*.pyc
+
+# Development files
+
+.env.development
+\*.log
+
+# Build artifacts
+
+backend/csv/
+backend/database/
+backend/drivers/
+backend/instance/
+
+# OS files
+
+.DS_Store
+Thumbs.db
+
+# IDE files
+
+.vscode/
+.idea/
+
+# Git
+
+.git/
